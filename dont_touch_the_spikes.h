@@ -142,7 +142,7 @@ namespace dont_touch_the_spikes {
 
 	/*****************************************************************************/
 
-	Bird::Bird(Field *_field, double _x, double _y, double _radius, double _hor_speed,
+	inline Bird::Bird(Field *_field, double _x, double _y, double _radius, double _hor_speed,
 		double _ver_speed, double _swing_speed, double _speed_up) :
 			field(_field), x(_x), y(_y), radius(_radius), hor_speed(_hor_speed),
 			ver_speed(_ver_speed),	swing_speed(_swing_speed),
@@ -171,13 +171,13 @@ namespace dont_touch_the_spikes {
 		return get_state();
 	}
 
-	void Bird::motion() {
+	inline void Bird::motion() {
 		double &time_step = field->time_step;
 		x += hor_speed * time_step;
 		y += ver_speed * time_step;
 	}
 
-	bool Bird::check_walls() {
+	inline bool Bird::check_walls() {
 		if (x < radius) {
 			x += radius - x;
 			hor_speed *= -1.0;
@@ -204,22 +204,34 @@ namespace dont_touch_the_spikes {
 		}
 		for (const Spike &one_spike : field->spikes) {
 			if (sqrt(pow(one_spike.x - x, 2.0) + pow(one_spike.y - y, 2.0)) < (radius + spike_height)) {
-				// если птица подлетела к центру основания шипа
-				// на расстояние меньшее высоты шипа, она умирает
-				// если точность будет не достаточной, можно переделать,
-				// чтобы проверялись именно границы шипа, а не расстояние до центра его основания
-				return true;
+				// вершина у основания шипа
+				double x1 = one_spike.x;
+				double y1 = one_spike.y + (spike_base / 2) * (x < one_spike.y ? -1.0 : 1,0);
+				// вершина шипа, не лежащая на основании
+				double x2 = one_spike.x - spike_height;
+				double y2 = one_spike.y;
+				// коэф-ты прямой, проходящей через эти 2 точки
+				double a = y1 - y2;
+				double b = x2 - x1;
+				double c = x1*y2 - x2*y1;
+				// расстояние от "центра" птицы до этой прямой
+				double r = (a*x + b*y + c) / (sqrt(pow(a, 2.0) + pow(b, 2.0)));
+				// если это расстояние меньше "радиуса" птицы,
+				// значит, она коснулась шипа
+				if (r < radius) {
+					return true;
+				}
 			}
 		}
 		// если птица не столкнулась ни с одним шипом, она живая
 		return false;
 	}
 
-	BirdState Bird::get_state() const {
+	inline BirdState Bird::get_state() const {
 		return BirdState(x, y, hor_speed > 0, alive, score);
 	}
 
-	Field::Field(double _width, double _height, double _spike_base,
+	inline Field::Field(double _width, double _height, double _spike_base,
 		double _spike_height, unsigned _complexity, double _time_step) :
 			width(_width), height(_height), spike_type(_spike_base, _spike_height),
 			complexity(_complexity), time_step(_time_step),
@@ -260,7 +272,7 @@ namespace dont_touch_the_spikes {
 		}
 	}
 
-	std::vector<BirdState> Field::get_birds() const {
+	inline std::vector<BirdState> Field::get_birds() const {
 		std::vector<BirdState> result;
 		for (const Bird &one_bird : birds) {
 			result.push_back(one_bird.get_state());
@@ -268,7 +280,7 @@ namespace dont_touch_the_spikes {
 		return result;
 	}
 
-	std::vector<SpikeState> Field::get_spikes() const {
+	inline std::vector<SpikeState> Field::get_spikes() const {
 		std::vector<SpikeState> result;
 		for (const Spike &one_spike : spikes) {
 			result.emplace_back(one_spike.x, one_spike.y, spike_type.base, spike_type.height);
