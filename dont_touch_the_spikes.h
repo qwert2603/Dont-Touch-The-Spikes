@@ -12,12 +12,11 @@ namespace dont_touch_the_spikes {
 
 	// потом надо будет добавить значения по умолчанию во все консрукторы
 
-	class Bird;			// одна птица
-	class Field;		// игровое поле
-	class Spike;		// один шип. содержит местолопожение одного шипа
-	class SpikeType;	// тип шипов. содержит высоту и диаметр основания шипов
-	struct BirdState;	// состояние птицы
-	struct SpikeState;	// состояние шипа
+	class Bird;				// одна птица
+	class Field;			// игровое поле
+	class HorSpike;			// один горизонтальный шип. содержит местолопожение одного шипа
+	struct BirdState;		// состояние птицы
+	struct HorSpikeState;	// состояние горизонтального шипа
 
 	/*****************************************************************************/
 
@@ -32,12 +31,10 @@ namespace dont_touch_the_spikes {
 		unsigned score;
 	};
 
-	struct SpikeState {
-		SpikeState(double _x, double _y, double _base, double _height) :
-			x(_x), y(_y), base(_base), height(_height) {}
+	struct HorSpikeState {
+		HorSpikeState(double _x, double _y) :
+			x(_x), y(_y) {}
 		double x, y;	// координаты центра основания
-		double base;		// диаметр основания шипа
-		double height;		// высота шипа
 	};
 
 	class Bird {
@@ -74,21 +71,12 @@ namespace dont_touch_the_spikes {
 		bool alive;					// ? живая ли
 	};
 
-	class SpikeType {
-		friend class Bird;
-		friend class Field;
-	public:
-		SpikeType(double _base, double _height) : base(_base), height(_height) {}
-	private:
-		double base;		// диаметр основания шипов
-		double height;		// высота шипов
-	};
-
 	class Field {
 		friend class Bird;
 	public:
-		Field(double _width, double _height, double _spike_base,
-			double _spike_height, unsigned _complexity, double _time_step);
+		Field(double _width, double _height, double _hor_spike_base,
+			double _hor_spike_height, double _ver_spike_base,
+			double _ver_spike_height, unsigned _complexity, double _time_step);
 		// добавить новую птицу, вернет номер новой птицы в std::vector<Bird> birds
 		std::vector<Bird>::size_type add_bird(double _x, double _y,
 			double _radius, double _hor_speed, double _ver_speed,
@@ -107,43 +95,50 @@ namespace dont_touch_the_spikes {
 		}
 		// добавить новый шип
 		void add_spike(double _x, double _y) {
-			spikes.emplace_back(_x, _y);
+			hor_spikes.emplace_back(_x, _y);
 		}
-		// рандомно добавить рандомное кол-во шипов
+		// рандомно добавить рандомное горизонтальных кол-во шипов
 		// стена на которую добавлять задается параметром
-		void add_random_spikes(bool _to_right);
-		// удалить все шипы с поля
-		void clear_spikes() { spikes.clear(); }
+		void add_random_hor_spikes(bool _to_right);
+		// удалить все горизонтальные шипы с поля
+		void clear_hor_spikes() { hor_spikes.clear(); }
 		// вектор всех птиц на поле
 		std::vector<BirdState> get_birds() const;
-		// вектор всех шипов на поле
-		std::vector<SpikeState> get_spikes() const;
+		// вектор всех горизонтальных шипов на поле
+		std::vector<HorSpikeState> get_hor_spikes() const;
 	private:
-		std::vector<Bird> birds;	// птицы на этом поле
-		std::vector<Spike> spikes;	// шипы на этом поле
-		SpikeType spike_type;		// тип шипов на этом поле
-		double width;				// ширина
-		double height;				// высота
-		double time_step;			// шаг по времени (использется во время хода птиц)
-		// сложность  (0 -- 10) (влияет на среднее кол-во шипов)
+		std::vector<Bird> birds;		// птицы на этом поле
+		// горизонтальные шипы на этом поле
+		// вертикальные шипы ровным слоем заполняют пол и потолок поля, их незачем хранить
+		std::vector<HorSpike> hor_spikes;
+		// параметры вертикальных шипов на этом поле (пол и потолок)
+		double ver_spike_base;			// диаметр основания
+		double ver_spike_height;		// высота
+		// параметры горизонтальных шипов на этом поле (боковые стенки)
+		double hor_spike_base;			// диаметр основания
+		double hor_spike_height;		// высота
+		double width;					// ширина поля
+		double height;					// высота поля
+		double time_step;				// шаг по времени (использется во время хода птиц)
+		// сложность  (0 -- 10) (влияет на среднее кол-во горизонтальных шипов)
 		unsigned complexity;
 		// процессор случайных чисел для этого поля
 		std::default_random_engine rand_eng;
 	};
 
-	class Spike {
+	class HorSpike {
 		friend class Bird;
 		friend class Field;
 	public:
-		Spike(double _x, double _y) : x(_x), y(_y) {}
+		HorSpike(double _x, double _y) : x(_x), y(_y) {}
 	private:
 		double x, y;	// координаты основания шипа
 	};
 
 	/*****************************************************************************/
 
-	inline Bird::Bird(Field *_field, double _x, double _y, double _radius, double _hor_speed,
-		double _ver_speed, double _swing_speed, double _speed_up) :
+	inline Bird::Bird(Field *_field, double _x, double _y, double _radius,
+		double _hor_speed, double _ver_speed, double _swing_speed, double _speed_up) :
 			field(_field), x(_x), y(_y), radius(_radius), hor_speed(_hor_speed),
 			ver_speed(_ver_speed),	swing_speed(_swing_speed),
 			speed_up(_speed_up), score(0), alive(true) {}
@@ -192,39 +187,35 @@ namespace dont_touch_the_spikes {
 	}
 
 	bool Bird::check_spikes() {
-		double &spike_base = field->spike_type.base;
-		double &spike_height = field->spike_type.height;
-		if ((y - radius) < spike_height || (y + radius) > (field->height - spike_height)) {
+		if ((y - radius) < field->ver_spike_height || (y + radius) > (field->height - field->ver_spike_height)) {
 			// птица ударилась об пол или потолок
 			return true;
 		}
-		if ((x - radius) > spike_height && (x + radius) < (field->width - spike_height)) {
+		if ((x - radius) > field->hor_spike_height && (x + radius) < (field->width - field->hor_spike_height)) {
 			// птица находится посередине поля, шипы далеко
 			return false;
 		}
-		for (const Spike &one_spike : field->spikes) {
-			if ((y < one_spike.y - spike_base) || (y > one_spike.y + spike_base)) {
+		for (const HorSpike &one_spike : field->hor_spikes) {
+			if ((y + radius < one_spike.y - field->hor_spike_base / 2) || (y - radius > one_spike.y + field->hor_spike_base / 2)) {
 				// птица находится выше или ниже шипа => шип не опасен
 				continue;
 			}
-			if (sqrt(pow(one_spike.x - x, 2.0) + pow(one_spike.y - y, 2.0)) < (radius + spike_height)) {
-				// вершина у основания шипа
-				double x1 = one_spike.x;
-				double y1 = one_spike.y + (spike_base / 2) * (x < one_spike.y ? -1.0 : 1,0);
-				// вершина шипа, не лежащая на основании
-				double x2 = one_spike.x - spike_height;
-				double y2 = one_spike.y;
-				// коэф-ты прямой, проходящей через эти 2 точки
-				double a = y1 - y2;
-				double b = x2 - x1;
-				double c = x1*y2 - x2*y1;
-				// расстояние от "центра" птицы до этой прямой
-				double r = (a*x + b*y + c) / (sqrt(pow(a, 2.0) + pow(b, 2.0)));
-				// если это расстояние меньше "радиуса" птицы,
-				// значит, она коснулась шипа
-				if (r < radius) {
-					return true;
-				}
+			// вершина у основания шипа
+			double x1 = one_spike.x;
+			double y1 = one_spike.y + (field->hor_spike_base / 2) * (y < one_spike.y ? -1.0 : 1.0);
+			// вершина шипа, не лежащая на основании
+			double x2 = one_spike.x + (field->hor_spike_height * (one_spike.x == 0 ? 1.0 : -1.0));
+			double y2 = one_spike.y;
+			// коэф-ты прямой, проходящей через эти 2 точки
+			double a = y1 - y2;
+			double b = x2 - x1;
+			double c = x1*y2 - x2*y1;
+			// расстояние от "центра" птицы до этой прямой
+			double r = (a*x + b*y + c) / (sqrt(pow(a, 2.0) + pow(b, 2.0)));
+			// если это расстояние меньше "радиуса" птицы,
+			// значит, она коснулась шипа
+			if (r < radius) {
+				return true;
 			}
 		}
 		// если птица не столкнулась ни с одним шипом, она живая
@@ -235,21 +226,29 @@ namespace dont_touch_the_spikes {
 		return BirdState(x, y, hor_speed > 0, alive, score);
 	}
 
-	inline Field::Field(double _width, double _height, double _spike_base,
-		double _spike_height, unsigned _complexity, double _time_step) :
-			width(_width), height(_height), spike_type(_spike_base, _spike_height),
+	inline Field::Field(double _width, double _height,
+		double _hor_spike_base, double _hor_spike_height,
+		double _ver_spike_base, double _ver_spike_height,
+		unsigned _complexity, double _time_step) :
+			width(_width), height(_height),
+			hor_spike_base(_hor_spike_base), hor_spike_height(_hor_spike_height),
+			ver_spike_base(_ver_spike_base), ver_spike_height(_ver_spike_height),
 			complexity(_complexity), time_step(_time_step),
 			rand_eng(static_cast<unsigned>(std::time(nullptr))) {}
 
-	void Field::add_random_spikes(bool _to_right) {
-		// максимальное возможное число шипов
-		double max_spikes = (height / spike_type.base) / 1.26;
+	void Field::add_random_hor_spikes(bool _to_right) {
+		// максимальное возможное число шипов;
+		// горизонтальные шипы не должны пересекаться с вертикальными
+		double max_spikes = (height - (2 * ver_spike_height)) / (hor_spike_base * 1.67);
 		// нормальное распределение случайных чисел для кол-ва шипов
 		std::normal_distribution<> rand_skikes_count(max_spikes * complexity / 10, 2.0);
 		// число шипов, которые появятся
-		unsigned spikes_count =  static_cast<unsigned>(abs(rand_skikes_count(rand_eng)));
+		unsigned spikes_count = max_spikes + 2.0;
+		while (spikes_count > max_spikes){
+			spikes_count = static_cast<unsigned>(abs(rand_skikes_count(rand_eng)));
+		}
 		// равномерное распределение случайных чисел для местоположения шипов
-		std::uniform_real_distribution<> rand_spikes_position(0, height);
+		std::uniform_real_distribution<> rand_spikes_position(ver_spike_height + hor_spike_base / 2, height - (ver_spike_height + hor_spike_base / 2));
 		// добавляем нужное кол-во шипов
 		while (spikes_count--) {
 			// ? добавление шипа выполнено
@@ -263,8 +262,8 @@ namespace dont_touch_the_spikes {
 				x_new = (_to_right ? width : 0);
 				y_new = rand_spikes_position(rand_eng);
 				// проверим, не пересекается ли новый шип с уже имеющимися
-				for (const Spike &one_spike : spikes) {
-					if (x_new == one_spike.x && abs(y_new - one_spike.y) < (spike_type.base)) {
+				for (const HorSpike &one_spike : hor_spikes) {
+					if (x_new == one_spike.x && abs(y_new - one_spike.y) < (hor_spike_base)) {
 						// новый шип пересекается с уже имеющимся
 						is_ok = false;
 						break;
@@ -284,10 +283,10 @@ namespace dont_touch_the_spikes {
 		return result;
 	}
 
-	inline std::vector<SpikeState> Field::get_spikes() const {
-		std::vector<SpikeState> result;
-		for (const Spike &one_spike : spikes) {
-			result.emplace_back(one_spike.x, one_spike.y, spike_type.base, spike_type.height);
+	inline std::vector<HorSpikeState> Field::get_hor_spikes() const {
+		std::vector<HorSpikeState> result;
+		for (const HorSpike &one_spike : hor_spikes) {
+			result.emplace_back(one_spike.x, one_spike.y);
 		}
 		return result;
 	}
