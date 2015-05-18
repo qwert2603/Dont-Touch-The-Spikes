@@ -211,12 +211,12 @@ namespace dont_touch_the_spikes {
 			double b = x2 - x1;
 			double c = x1*y2 - x2*y1;
 			// расстояние от "центра" птицы до этой прямой
-			double r = (a*x + b*y + c) / (sqrt(pow(a, 2.0) + pow(b, 2.0)));
+			double r = abs(a*x + b*y + c) / (sqrt(pow(a, 2.0) + pow(b, 2.0)));
 			// если это расстояние меньше "радиуса" птицы,
 			// значит, она коснулась шипа
 			if (r < radius) {
 				return true;
-			}
+			}	
 		}
 		// если птица не столкнулась ни с одним шипом, она живая
 		return false;
