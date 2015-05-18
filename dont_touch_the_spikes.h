@@ -194,15 +194,19 @@ namespace dont_touch_the_spikes {
 	bool Bird::check_spikes() {
 		double &spike_base = field->spike_type.base;
 		double &spike_height = field->spike_type.height;
-		if ((y - radius) < spike_height || (y + radius) > field->height - spike_height) {
+		if ((y - radius) < spike_height || (y + radius) > (field->height - spike_height)) {
 			// птица ударилась об пол или потолок
 			return true;
 		}
-		if ((x - radius) > spike_height && (x + radius) < field->width - spike_height) {
+		if ((x - radius) > spike_height && (x + radius) < (field->width - spike_height)) {
 			// птица находится посередине поля, шипы далеко
 			return false;
 		}
 		for (const Spike &one_spike : field->spikes) {
+			if ((y < one_spike.y - spike_base) || (y > one_spike.y + spike_base)) {
+				// птица находится выше или ниже шипа => шип не опасен
+				continue;
+			}
 			if (sqrt(pow(one_spike.x - x, 2.0) + pow(one_spike.y - y, 2.0)) < (radius + spike_height)) {
 				// вершина у основания шипа
 				double x1 = one_spike.x;
@@ -235,7 +239,7 @@ namespace dont_touch_the_spikes {
 		double _spike_height, unsigned _complexity, double _time_step) :
 			width(_width), height(_height), spike_type(_spike_base, _spike_height),
 			complexity(_complexity), time_step(_time_step),
-			rand_eng(std::time(nullptr)) {}
+			rand_eng(static_cast<unsigned>(std::time(nullptr))) {}
 
 	void Field::add_random_spikes(bool _to_right) {
 		// максимальное возможное число шипов
@@ -243,7 +247,7 @@ namespace dont_touch_the_spikes {
 		// нормальное распределение случайных чисел для кол-ва шипов
 		std::normal_distribution<> rand_skikes_count(max_spikes * complexity / 10, 2.0);
 		// число шипов, которые появятся
-		unsigned spikes_count = abs(rand_skikes_count(rand_eng));
+		unsigned spikes_count =  static_cast<unsigned>(abs(rand_skikes_count(rand_eng)));
 		// равномерное распределение случайных чисел для местоположения шипов
 		std::uniform_real_distribution<> rand_spikes_position(0, height);
 		// добавляем нужное кол-во шипов
@@ -260,7 +264,7 @@ namespace dont_touch_the_spikes {
 				y_new = rand_spikes_position(rand_eng);
 				// проверим, не пересекается ли новый шип с уже имеющимися
 				for (const Spike &one_spike : spikes) {
-					if (x_new == one_spike.x && abs(y_new - one_spike.y) < (spike_type.base / 2)) {
+					if (x_new == one_spike.x && abs(y_new - one_spike.y) < (spike_type.base)) {
 						// новый шип пересекается с уже имеющимся
 						is_ok = false;
 						break;
