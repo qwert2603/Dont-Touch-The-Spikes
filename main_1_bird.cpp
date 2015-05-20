@@ -10,7 +10,7 @@ namespace dtts = dont_touch_the_spikes;
 const unsigned width = 480;
 const unsigned height = 640;
 // радиус птицы
-const double bird_radius = 32;
+const double bird_radius = 24;
 // сложность
 const unsigned complexity = 4;
 // параметры движения птицы
@@ -59,7 +59,7 @@ int main() {
 
 	// для картинки птицы
 	sf::Image bird_image;
-	bird_image.loadFromFile("images/bird.png");
+	bird_image.loadFromFile("images/bird_0.png");
 	bird_image.createMaskFromColor(sf::Color::White);
 	sf::Texture bird_texture;
 	bird_texture.loadFromImage(bird_image);
@@ -115,13 +115,15 @@ int main() {
 				window.close();
 			}
 			if (Event.type == sf::Event::MouseButtonPressed) {
-				// если игра не идет
-				if (!is_game) {
-					// игра начинается при нажатии на клавишу
-					is_game = true;
+				if (Event.mouseButton.button == sf::Mouse::Left) {
+					// если игра не идет
+					if (!is_game) {
+						// игра начинается при нажатии на клавишу
+						is_game = true;
+					}
+					// постольку поскольку нажата мышка, взмах имеет место быть
+					field.bird_swing(0);
 				}
-				// постольку поскольку нажата мышка, взмах имеет место быть
-				field.bird_swing(0);
 			}
 		}
 
@@ -175,7 +177,9 @@ int main() {
 
 		// для отображение кружочка
 		sf::CircleShape circle;
-		circle.setFillColor(sf::Color::Red);
+		circle.setFillColor(sf::Color::White);
+		circle.setOutlineThickness(1.5);
+		circle.setOutlineColor(sf::Color::Green);
 		// отображение кружочков
 		for (const auto &one_bird_circles : circles) {
 			for (const auto &one_circle : one_bird_circles) {
