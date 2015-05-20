@@ -7,7 +7,7 @@
 namespace dtts = dont_touch_the_spikes;
 
 // размеры окна
-const unsigned width = 520;
+const unsigned width = 480;
 const unsigned height = 640;
 // радиус птицы
 const double bird_radius = 32;
