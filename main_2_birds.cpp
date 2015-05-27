@@ -121,12 +121,8 @@ int main() {
 	dtts::BirdState bird_state_0 = birds.first;
 	dtts::BirdState bird_state_1 = birds.second;
 
-	//bool bird_to_right = true;	// ? птица летит вправо
 	bool is_game_0 = false;		// ? игра идет для этой 0 птицы
 	bool is_game_1 = false;		// ? игра идет для этой 1 птицы
-
-	// время, прошедшее после смерти птицы
-	//double after_death_counter = 0.0;
 
 	while (window.isOpen()) {
 		// обработка закрытия окна
@@ -170,52 +166,20 @@ int main() {
 		}
 
 		// если игра идет
+		// птица летит, и получаем ее новое состояние
 		if (is_game_0) 
 			bird_state_0 = field.bird_fly(0);
 		if (is_game_1)
 			bird_state_1 = field.bird_fly(1);
-			// птица летит, и получаем ее новое состояние
-		/*	bird_state_0 = field.bird_fly(0);
-			bird_state_1 = field.bird_fly(1);*/
-
-	/*		// если птица мертва, считаем время, прошедшее после сметри
-			if (!bird_state.alive) {
-				after_death_counter += time_step;
-			}*/
-
-		/*	// если птица мертва достаточно долго, игра прекращается,
-			// старая птица удаляется, и создается новая птица, аналогичная старой,
-			// также создаются новые шипы
-			if (after_death_counter > 1.0) {
-				// удаляем старые кружочки
-				field.clear_circles(0);
-				is_game = false;
-				after_death_counter = 0;
-				field.erase_bird(0);
-				bird_state = make_bird_n_other(field);
-			}
-			// если живая птица ударилась о стену и поменяла направление
-			if (bird_state.alive && bird_state.right_direction != bird_to_right) {
-				// запоминаем новое направление
-				bird_to_right = bird_state.right_direction;
-				// удаляем все шипы
-				field.clear_hor_spikes();
-				// добавляем шипы на противоположную стену
-				field.add_random_hor_spikes(bird_to_right);
-			}*/
-//		}
+			
 
 		// получаем все шипы на поле
 		auto spikes = field.get_hor_spikes();
 
 		// получаем все кружочки на поле
 		auto circles = field.get_circles();
-
-		// счет меняется только во время игры
-		/*if (is_game) {
-			score_text.setString(sf::String(std::to_string(bird_state.score)));
-		}*/
-
+		
+		// получаем счет
 		score_text_0.setString(sf::String(std::to_string(bird_state_0.score)));
 		score_text_1.setString(sf::String(std::to_string(bird_state_1.score)));
 
